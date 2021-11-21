@@ -1,0 +1,5 @@
+start_datatime = 2021-11-18 08:00:00
+end_datatime = 2021-11-18 16:00:00
+adjust = 1
+[60s] = SHSE.600000
+
