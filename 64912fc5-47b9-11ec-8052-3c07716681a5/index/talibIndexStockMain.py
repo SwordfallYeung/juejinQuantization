@@ -3,6 +3,7 @@ from __future__ import print_function, absolute_import
 from gm.api import *
 import pandas as pd
 import numpy as np
+import talib
 
 
 # 策略中必须有init方法
@@ -34,14 +35,26 @@ def init(context):
     # 获取合盛硅业WR指标 至少需要7个月数据
     #wrData = WR('SHSE.603260', '2021-04-20', '2021-11-20', N1 = 10, N2 = 6)
     #print(wrData)
+   
+    # 取历史数据，取到上市首日
+    data = history(symbol='SHSE.603260', frequency='1d', start_time='2021-04-20', end_time='2021-11-20', fields='symbol,bob,close', adjust=ADJUST_PREV, adjust_end_time='2021-11-20', df=True)
+    # 将数据转化为dataframe格式
+    data['bob'] = data['bob'].apply(lambda x: x.strftime('%Y-%m-%d')).tolist()
 
-    # 获取合盛硅业MA指标 至少需要7个月数据
-    #maData = MA('SHSE.603260', '2021-01-20', '2021-11-20')
-    #print(maData)
+    # 获取合盛硅业MA指标 至少需要7个月数据 均线的获取
+    data['MA5']=talib.MA(data['close'], timeperiod=5)
+    #MA5=talib.MA(data['close'], timeperiod=5)
+    #MA10=talib.MA(data['close'], timeperiod=10)
+    data['MA10']=talib.MA(data['close'], timeperiod=10)
+    #MA20=talib.MA(data['close'], timeperiod=20)
+    data['MA20']=talib.MA(data['close'], timeperiod=20)
+    #MA60=talib.MA(data['close'], timeperiod=60)
+    data['MA60']=talib.MA(data['close'], timeperiod=60)
+    print (data)
+    
+    
+    
 
-    # 获取合盛硅业EMA指标 至少需要7个月数据
-    emaData = EMA('SHSE.603260', '2021-01-20', '2021-11-20')
-    print(emaData)
 
 if __name__ == '__main__':
     '''
