@@ -7,40 +7,13 @@ import talib
 
 
 # 策略中必须有init方法
-def init(context):
-    # 获取合盛硅业KDJ指标 至少需要2个月数据
-    #kdjData = KDJ('SHSE.603260', 9, 3, 3, '2021-9-20', '2021-11-20')
-    #print(kdjData)
-
-    # 获取合盛硅业MACD指标 至少需要7个月数据
-    #macdData = MACD('SHSE.603260', '2021-04-20', '2021-11-20')
-    #print(macdData)
-
-    # 获取合盛硅业DMA指标 至少需要7个月数据
-    #dmaData = DMA('SHSE.603260', '2021-04-20', '2021-11-20', N1 = 10, N2 = 50, M = 6)
-    #print(dmaData)
-
-    # 获取合盛硅业BIAS指标 至少需要7个月数据
-    #biasData = BIAS('SHSE.603260', '2021-04-20', '2021-11-20', N1 = 6, N2 = 12, N3 = 24)
-    #print(biasData)
-
-    # 获取合盛硅业BOLL指标 至少需要7个月数据
-    #bollData = BOLL('SHSE.603260', '2021-04-20', '2021-11-20', N = 20)
-    #print(bollData)
-    
-    # 获取合盛硅业RSI指标 至少需要7个月数据
-    #rsiData = RSI('SHSE.603260', '2021-04-20', '2021-11-20', N1 = 6, N2 = 12, N3 = 24)
-    #print(rsiData)
-
-    # 获取合盛硅业WR指标 至少需要7个月数据
-    #wrData = WR('SHSE.603260', '2021-04-20', '2021-11-20', N1 = 10, N2 = 6)
-    #print(wrData)
-   
+def init(context): 
     # 取历史数据，取到上市首日
-    data = history(symbol='SHSE.603260', frequency='1d', start_time='2021-04-20', end_time='2021-11-20', fields='symbol,bob,close', adjust=ADJUST_PREV, adjust_end_time='2021-11-20', df=True)
+    data = history(symbol='SHSE.603260', frequency='1d', start_time='2021-04-20', end_time='2021-11-22', fields='symbol,bob,high,low,close', adjust=ADJUST_PREV, adjust_end_time='2021-11-20', df=True)
     # 将数据转化为dataframe格式
     data['bob'] = data['bob'].apply(lambda x: x.strftime('%Y-%m-%d')).tolist()
 
+    '''https://bbs.myquant.cn/topic/1910/2'''
     # 获取合盛硅业MA指标 至少需要7个月数据 均线的获取
     data['MA5']=talib.MA(data['close'], timeperiod=5)
     #MA5=talib.MA(data['close'], timeperiod=5)
@@ -52,7 +25,25 @@ def init(context):
     data['MA60']=talib.MA(data['close'], timeperiod=60)
     print (data)
     
+    # 获取合盛硅业MACD指标 至少需要7个月数据
+    data['macddiff'], data['macddea'], data['macd'] = talib.MACDEXT(data['close'], fastperiod=12, fastmatype=1, slowperiod=26, slowmatype=1, signalperiod=9, signalmatype=1)
+    data['macd'] = data['macd'] * 2
+    print(data)
     
+    # 获取合盛硅业RSI指标 至少需要7个月数据
+    data['rsi6'] = talib.RSI(data['close'], timeperiod=6)
+    data['rsi12'] = talib.RSI(data['close'], timeperiod=12)
+    data['rsi24'] = talib.RSI(data['close'], timeperiod=24)
+    print(data)
+
+    # 获取合盛硅业WR指标 至少需要7个月数据
+    data['will10'] = abs(talib.WILLR(data['high'],data['low'],data['close'], timeperiod=10))
+    data['will6'] = abs(talib.WILLR(data['high'],data['low'],data['close'], timeperiod=6))
+    data['will20'] = abs(talib.WILLR(data['high'],data['low'],data['close'], timeperiod=20))
+    data['will80'] = abs(talib.WILLR(data['high'],data['low'],data['close'], timeperiod=80))
+    print(data)
+
+    # 获取合盛硅业KDJ指标 至少需要2个月数据
     
 
 

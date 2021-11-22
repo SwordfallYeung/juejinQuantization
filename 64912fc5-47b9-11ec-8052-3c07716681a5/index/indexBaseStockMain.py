@@ -4,7 +4,7 @@ from gm.api import *
 import pandas as pd
 import numpy as np
 
-def KDJ(symbol, N, M1, M2, start_time, end_time):
+def KDJ(symbol, N=9, M1=3, M2=3, start_time, end_time):
     '''
     计算KDJ指标公式
     输入：data <- dataframe, 需包含开盘、收盘、最高、最低价，N, M1, M2 <- int

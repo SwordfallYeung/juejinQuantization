@@ -1,0 +1,5 @@
+start_datatime = 2020-07-04 09:00:00
+end_datatime = 2021-11-05 15:00:00
+adjust = 1
+[1d] = SHSE.000300
+
