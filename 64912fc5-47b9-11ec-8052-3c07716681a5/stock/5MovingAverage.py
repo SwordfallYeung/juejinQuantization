@@ -31,7 +31,7 @@ def init(context):
     # 18日慢速均线窗口长度                                        
     context.long = 18     
     # 通道突破周期 12                                         
-    context.Chlen = context.short + 3 
+    context.Chlen = 3 
     # 跟踪止损窗口长度 8                             
     context.TrailWindow = context.short - 1  
     # 再进场通道突破周期 10                      
@@ -47,11 +47,11 @@ def init(context):
     # 再进场时间计数                                       
     context.day_3:int = 0            
     # 订阅交易标的                              
-    context.symbol = 'SHSE.000300'   
+    context.symbol = 'SHSE.603260'    # 'SHSE.000300'
     # 订阅数据滑窗长度 19                              
     context.period = context.long + 1    
 
-    historyData = history(symbol=context.symbol, frequency='1d', start_time='2020-03-04', end_time='2020-10-02', fields='symbol,bob,close', adjust=ADJUST_PREV, df=True)
+    historyData = history(symbol=context.symbol, frequency='1d', start_time='2020-03-04', end_time='2020-10-02', fields='symbol,bob,close,volume', adjust=ADJUST_PREV, df=True)
     historyData['bob'] = historyData['bob'].apply(lambda x: x.strftime('%Y-%m-%d')).tolist()
     # 计算5日均线、10日均线、20日均线、60日均线、120日均线
     historyData['fiveAvg'] = historyData['close'].rolling(5).mean()
@@ -66,20 +66,20 @@ def init(context):
     subscribe(context.symbol, '1d')          
     
 def on_bar(context, bars):
-    # 获取通过subscribe订阅的数据
-    data = context.data(symbol=context.symbol, frequency='1d', fields='symbol,bob,close')
+    # 获取通过subscribe订阅的数据 
+    data = context.data(symbol=context.symbol, frequency='1d', fields='symbol,bob,close,volume')
     data['bob'] = data['bob'].apply(lambda x: x.strftime('%Y-%m-%d')).tolist()
     current_time = data['bob'].values[-1]
 
     print(current_time)
 
     context.historyData = context.historyData.append(data, ignore_index=True)
-    lastt = context.historyData.index[-1]
-    context.historyData.loc[lastt, 'fiveAvg'] = context.historyData['close'].tail(5).mean()
-    context.historyData.loc[lastt, 'tenAvg'] = context.historyData['close'].tail(10).mean()
-    context.historyData.loc[lastt, 'twentyAvg'] = context.historyData['close'].tail(20).mean()
-    context.historyData.loc[lastt, 'sixtyAvg'] = context.historyData['close'].tail(60).mean()
-    context.historyData.loc[lastt, 'oneHunTwentyAvg'] = context.historyData['close'].tail(120).mean()
+    last = context.historyData.index[-1]
+    context.historyData.loc[last, 'fiveAvg'] = context.historyData['close'].tail(5).mean()
+    context.historyData.loc[last, 'tenAvg'] = context.historyData['close'].tail(10).mean()
+    context.historyData.loc[last, 'twentyAvg'] = context.historyData['close'].tail(20).mean()
+    context.historyData.loc[last, 'sixtyAvg'] = context.historyData['close'].tail(60).mean()
+    context.historyData.loc[last, 'oneHunTwentyAvg'] = context.historyData['close'].tail(120).mean()
     
     fiveAvg = context.historyData['fiveAvg']
     tenAvg = context.historyData['tenAvg']
@@ -97,69 +97,29 @@ def on_bar(context, bars):
         # 9日均线上穿18日均线(金叉)，认为价格有上涨趋势 
         if fiveAvg.values[-1] > sixtyAvg.values[-1] and tenAvg.values[-1] > sixtyAvg.values[-1] and twentyAvg.values[-1] > sixtyAvg.values[-1] and  sixtyAvg.values[-1] > oneHunTwentyAvg.values[-1]:
             # 记录形成金叉的时间
-            #context.day_1 = 0
-            print(fiveAvg.values[-1])
-            print(tenAvg.values[-1])
-            print(twentyAvg.values[-1])
-            print(sixtyAvg.values[-1])
-            print(oneHunTwentyAvg.values[-1])
+            context.day_1 += 1
 
-        # 在形成金叉信号后的Chlen个交易日内(超出时段则无效)
-        # if context.day_1 <= context.Chlen:
-        #     # 若价格向上突破买入触发价(最近Chlen个交易日的日内最高价的最高者)时，买入
-        #     if data.close.values[-1] > data.high.iloc[-context.Chlen-1:-1].max():
-        #         order_percent(symbol= context.symbol , percent=0.8, side=OrderSide_Buy, 
-        #                         order_type=OrderType_Market, position_effect=PositionEffect_Open)
-        #         print('以市价买进到仓位')
-        #         # 交易状态改变，1为持仓
-        #         context.status = 1
-        #     context.day_1 += 1
-
-    # # 跟踪止损1: 持仓时，设置跟踪止损触发价(TrailWindow 个交易日的日内最低价的最低者)
-    # if context.status == 1:
-    #     low_price = data.low.iloc[-context.TrailWindow-1:-1].min()
-    #     # 若价格跌破跟踪止损触发价时进行止损，卖出暂时出场
-    #     if data.close.iloc[-1] < low_price:
-    #         order_close_all()
-    #         print('暂时出场')
-    #         # 交易状态改变，1.1为暂时出场
-    #         context.status = 1.1
-    #         # 记录暂时出场时间
-    #         context.day_3 = 0
-
-    # # 跟踪止损2：暂时出场后，设置阻力线(最近ReEntryChLen个交易日的日内最高价的最高者)
-    # if context.status == 1.1:
-    #     high_price = data.high.iloc[-context.ReEntryChLen-1:-1].max()
-    #     # 在出场后的 ReEntryWindow 个交易日内(超出时段则无效)
-    #     if context.day_3 <= context.ReEntryWindow:
-    #         # 若价格向上突破此阻力线，判定原趋势继续，买入再度进场
-    #         if data.close.iloc[-1] > high_price:
-    #             order_percent(symbol= context.symbol , percent=0.8, side=OrderSide_Buy, 
-    #                             order_type=OrderType_Market, position_effect=PositionEffect_Open)
-    #             print('以市价再度进场')
-    #             # 交易状态改变，1为持仓
-    #             context.status = 1
-    #         context.day_3 += 1
-    #     # 超过ReEntryWindow 个交易日时，交易状态改变，2为空仓，正式出场
-    #     else:
-    #         context.status = 2
+            # 在形成金叉信号后的Chlen个交易日内(超出时段则无效)
+            if context.day_1 >= context.Chlen:
+                order_percent(symbol= context.symbol , percent=0.8, side=OrderSide_Buy, order_type=OrderType_Market, position_effect=PositionEffect_Open)
+                print('以市价买进到仓位')
+                # 交易状态改变，1为持仓
+                context.status = 1
     
-    # # 交易状态,1为持仓
-    # if context.status == 1:
-    #     # 快速均线下穿慢速均线(死叉)，认为价格有下跌趋势
-    #     if short_avg.values[-2] > long_avg.values[-2] and short_avg.values[-1] <= long_avg.values[-1]:
-    #         # 记录形成死叉的时间
-    #         context.day_2 = 0
+    # 交易状态,1为持仓
+    if context.status == 1:
+        # 快速均线下穿慢速均线(死叉)，认为价格有下跌趋势
+        if fiveAvg.values[-1] < sixtyAvg.values[-1]:
+            # 记录形成死叉的时间
+            context.day_2 += 1
 
-    #     # 在形成死叉信号后的Chlen个交易日内(超出时段则无效)
-    #     if context.day_2 <= context.Chlen:
-    #         # 若价格向下突破卖出触发价(最近Chlen个交易日的日内最低价的最低者)时，发出卖出信号
-    #         if data.close.values[-1] <= data.low.iloc[-context.Chlen-1:-1].min():
-    #             order_close_all()
-    #             print('以市价单全部卖出')
-    #             # 交易状态改变，2为空仓
-    #             context.status = 2
-    #         context.day_2 += 1
+            # 在形成死叉信号后的Chlen个交易日内(超出时段则无效)
+            if context.day_2 > 1:
+               order_close_all()
+               print('以市价单全部卖出')
+               # 交易状态改变，2为空仓
+               context.status = 2
+            
 
 # 查看最终的回测结果
 def on_backtest_finished(context, indicator):
@@ -185,7 +145,7 @@ if __name__ == '__main__':
         mode=MODE_BACKTEST,
         token='f19251d783b38a297687724d2cb0d1d481f14718',
         backtest_start_time='2020-10-03 09:00:00',  #'2020-07-04 09:00:00',
-        backtest_end_time='2020-11-11 15:00:00',   # '2021-01-12 15:00:00',
+        backtest_end_time='2021-11-22 15:00:00',   # '2021-01-12 15:00:00',
         backtest_adjust=ADJUST_PREV,
         backtest_initial_cash=10000000,
         backtest_commission_ratio=0.0003,
